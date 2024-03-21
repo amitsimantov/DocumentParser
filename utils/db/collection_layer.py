@@ -1,8 +1,19 @@
+"""
+Collection handlers for MongoDB.
+"""
+
+import os
+from abc import ABC
+
+from utils.db.db_layer import DBLayer
 from utils.logger import Logger
 from app.settings import DOCUMENTS, DISCREPANCIES
 
 
-class BaseCollectionHandler:
+class BaseCollectionHandler(ABC):
+    """
+    Abstract base collection handler.
+    """
 
     def __init__(self, db):
         self._db = db
@@ -10,6 +21,10 @@ class BaseCollectionHandler:
         self._collection = None
 
     def insert(self, data):
+        """
+        Insert one document to collection.
+        :param data: dictionary containing data for insertion
+        """
         if not data:
             self._logger.warning('Received an empty data set. Ignoring.')
             return
@@ -22,6 +37,10 @@ class BaseCollectionHandler:
             self._logger.error(f'Failed inserting data to db! {e}')
 
     def insert_many(self, data):
+        """
+        Insert Many documents to collection.
+        :param data: list of dictionaries containing data for insertion
+        """
         if not data:
             self._logger.warning('Received an empty data set. Ignoring.')
             return
@@ -34,6 +53,11 @@ class BaseCollectionHandler:
             self._logger.error(f'Failed inserting data to db! {e}')
 
     def find(self, query):
+        """
+        Search query in db.
+        :param query: Dict to be searched in db, e.g., {"file_name": "abc"}
+        :return: Cursor object containing the query results.
+        """
         try:
             result = self._collection.find(query)
             return result
@@ -42,6 +66,9 @@ class BaseCollectionHandler:
             self._logger.error(f'Failed searching db! {e}')
 
     def empty(self):
+        """
+        Empty collection.
+        """
         try:
             result = self._collection.delete_many({})
             self._logger.info(result)
@@ -51,6 +78,9 @@ class BaseCollectionHandler:
 
 
 class DocumentCollectionHandler(BaseCollectionHandler):
+    """
+    Collection Handler for documents collection.
+    """
 
     def __init__(self, db):
         super(DocumentCollectionHandler, self).__init__(db)
@@ -59,6 +89,9 @@ class DocumentCollectionHandler(BaseCollectionHandler):
 
 
 class DiscrepancyCollectionHandler(BaseCollectionHandler):
+    """
+    Collection Handler for discrepancies collection.
+    """
 
     def __init__(self, db):
         super(DiscrepancyCollectionHandler, self).__init__(db)
@@ -67,6 +100,10 @@ class DiscrepancyCollectionHandler(BaseCollectionHandler):
 
 
 class CollectionFactory:
+    """
+    Collection Factory.
+    Used to dynamically produce the required collection handler.
+    """
 
     HANDLERS_MAP = {DISCREPANCIES: DiscrepancyCollectionHandler,
                     DOCUMENTS: DocumentCollectionHandler}
@@ -86,6 +123,12 @@ class CollectionFactory:
 
     @classmethod
     def insert_many_to_collection(cls, collection_name, data, db):
+        """
+        Insert many documents to collection.
+        :param collection_name: Name of the collection.
+        :param data: List of dictionaries for insertion.
+        :param db: DB instance
+        """
         if not data:
             cls._logger.warning('Received an empty data set. Ignoring.')
             return
@@ -99,6 +142,10 @@ class CollectionFactory:
 
     @classmethod
     def empty_all(cls, db):
+        """
+        Empty all collections in db.
+        :param db: DB instance.
+        """
         for c in cls.HANDLERS_MAP:
             try:
                 cls.HANDLERS_MAP[c](db).empty()
@@ -106,3 +153,14 @@ class CollectionFactory:
 
             except Exception as e:
                 cls._logger.error(f'Failed emptying collection: {c}, {e}')
+
+
+if __name__ == '__main__':
+    db_uri = os.getenv('DB_URI')
+    db_name = os.getenv('DB_NAME')
+    db = DBLayer(db_uri=db_uri,
+                 db_name=db_name).get_db()
+    document_collection = DocumentCollectionHandler(db)
+    result = document_collection.find(query={"file_name": "0_table.html"})
+    for r in result:
+        print(r)

@@ -1,5 +1,8 @@
-from pymongo.mongo_client import MongoClient
+"""
+DB Layer for MongoDB.
+"""
 
+from pymongo.mongo_client import MongoClient
 from utils.logger import Logger
 
 

@@ -1,5 +1,5 @@
 # --- App Constants ---
-DATE_FORMAT = '%d%b%Y'
+FILE_DATE_FORMAT = '%d%b%Y'
 ARG_DATE_FORMAT = "%Y-%m-%d"
 
 # --- Collection Names ---

@@ -1,10 +1,10 @@
 import argparse
 from datetime import date, datetime
 
-from app.settings import DATE_FORMAT, ARG_DATE_FORMAT
+from app.settings import FILE_DATE_FORMAT, ARG_DATE_FORMAT
 
 
-def convert_str_to_date_obj(date_string: str, date_format: str = DATE_FORMAT, exception: Exception = None) -> date | None:
+def convert_str_to_date_obj(date_string: str, date_format: str = FILE_DATE_FORMAT, exception: Exception = None) -> date | None:
     try:
         return datetime.strptime(date_string, date_format).date()
 

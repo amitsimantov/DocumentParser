@@ -3,7 +3,7 @@ from pydantic import BaseModel
 from datetime import date
 from typing import Optional
 
-from app.settings import DATE_FORMAT
+from app.settings import FILE_DATE_FORMAT
 from utils.logger import Logger
 from utils.tools import convert_str_to_date_obj
 from app.parser import ParsedData
@@ -62,7 +62,7 @@ class DocumentValidator:
         :param parsed_data:
         :return: ValidationResult object, contains the validation status and a list of found discrepancies.
         """
-        self._logger.info(f'Validating document: {parsed_data.document_id}')
+        self._logger.info(f'Validating file: {parsed_data.file_name}')
         self._validate_title(parsed_data.title)
         self._validate_creation_date(parsed_data.date_of_creation)
         self._validate_body(parsed_data.body)
@@ -70,7 +70,7 @@ class DocumentValidator:
         if self._discrepancies:
             self._status = ValidationStatus.INVALID
 
-        self._logger.info(f'Finished validating document: {parsed_data.document_id}')
+        self._logger.info(f'Finished validating document: {parsed_data.file_name}')
 
         return ValidationResult(status=self._status,
                                 discrepancies=[{'document_id': parsed_data.document_id,
@@ -99,7 +99,7 @@ class DocumentValidator:
 
         try:
             date_of_creation = convert_str_to_date_obj(date_string=date_of_creation,
-                                                       date_format=DATE_FORMAT)
+                                                       date_format=FILE_DATE_FORMAT)
 
             if not date_of_creation or date_of_creation > self._max_creation_date:
                 self._discrepancies.append(Discrepancy(type=DiscrepancyType.INVALID_VALUE,
