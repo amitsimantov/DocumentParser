@@ -1,3 +1,4 @@
+import os
 import re
 from bs4 import BeautifulSoup
 from pydantic import BaseModel
@@ -27,11 +28,14 @@ class DocumentParser:
 
     @staticmethod
     def read_file(file):
+        if not os.path.isfile(file):
+            raise Exception(f'{file} must be a valid file!')
+
         with open(file) as f:
             content = f.read()
         return content
 
-    def parse(self, file: str):
+    def parse(self, file):
         """
         Parses html document.
         :param file path

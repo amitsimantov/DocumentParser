@@ -21,16 +21,17 @@ class DocumentParserApp:
 
     def run(self):
         try:
+            # self._logger.info(f'Cleaning database.')
             # CollectionFactory.empty_all(self._db)
 
-            files_list = [os.path.join(self._dir_path, entry) for entry in os.listdir(self._dir_path) if
-                          os.path.isfile(os.path.join(self._dir_path, entry))]
-
+            self._logger.info(f'Started processing files.')
+            files_list = [os.path.join(self._dir_path, entry) for entry in os.listdir(self._dir_path)]
             documents_data = []
             discrepancies_data = []
+            parser = DocumentParser()
+
             for file in files_list:
                 try:
-                    parser = DocumentParser()
                     parsed_data = parser.parse(file)
                     documents_data.append(parsed_data.dict())
 
@@ -45,6 +46,7 @@ class DocumentParserApp:
 
             CollectionFactory.insert_many_to_collection(collection_name=DOCUMENTS, data=documents_data, db=self._db)
             CollectionFactory.insert_many_to_collection(collection_name=DISCREPANCIES, data=discrepancies_data, db=self._db)
+            self._logger.info(f'Finished processing files.')
 
         except Exception as e:
             self._logger.error(f'An unexpected error occurred: {e}')
