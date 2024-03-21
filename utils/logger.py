@@ -1,7 +1,6 @@
 import logging
 
-BASE_FORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-
+from app.settings import BASE_LOG_FORMAT
 
 class Logger:
 
@@ -10,11 +9,12 @@ class Logger:
 
     def get_logger(self):
         logger = logging.getLogger(self._name)
-        handler = logging.StreamHandler()
-        handler.setLevel(logging.INFO)
-        formatter = logging.Formatter(BASE_FORMAT)
-        handler.setFormatter(formatter)
-        logger.addHandler(handler)
-        logger.setLevel(logging.INFO)
+        if not logger.handlers:
+            handler = logging.StreamHandler()
+            handler.setLevel(logging.INFO)
+            formatter = logging.Formatter(BASE_LOG_FORMAT)
+            handler.setFormatter(formatter)
+            logger.addHandler(handler)
+            logger.setLevel(logging.INFO)
         return logger
 

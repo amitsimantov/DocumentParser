@@ -1,48 +1,62 @@
 import os
 
-from utils.config import Config
-from db.db_layer import DBLayer
-from db.collection_layer import DocumentCollection, DiscrepancyCollection
-from parser import DocumentParser
-from validator import DocumentValidator, ValidationStatus
+from utils.config import Config, ConfigObj
+from utils.db.db_layer import DBLayer
+from utils.db.collection_layer import CollectionFactory
+from utils.tools import get_args
+from utils.logger import Logger
+
+from app.parser import DocumentParser
+from app.validator import DocumentValidator, ValidationStatus
+from app.settings import DOCUMENTS, DISCREPANCIES
 
 
-def main(dir_path: str):
-    config = Config().get_config()
-    files_list = [os.path.join(dir_path, entry) for entry in os.listdir(dir_path) if
-                  os.path.isfile(os.path.join(dir_path, entry))]
+class DocumentParserApp:
 
-    parsed_documents = []
-    discrepancies = []
+    def __init__(self, config: ConfigObj, db: DBLayer, dir_path: str):
+        self._db = db
+        self._config = config
+        self._dir_path = dir_path
+        self._logger = Logger('main-app-logger').get_logger()
 
-    for file in files_list:
-        parser = DocumentParser()
-        parsed_data = parser.parse(file)
-        parsed_documents.append(parsed_data.dict())
+    def run(self):
+        try:
+            # CollectionFactory.empty_all(self._db)
 
-        validator = DocumentValidator(min_length=config.N,
-                                      max_date=config.D,
-                                      max_sum=config.SUM)
-        validation_result = validator.validate(parsed_data)
-        if validation_result.status != ValidationStatus.VALID.value:
-            discrepancies.extend([{'document_id': parsed_data.document_id,
-                                   'discrepancy': {
-                                       'type': disc.type,
-                                       'location': disc.location,
-                                       'description': disc.description}}
-                                  for disc in validation_result.discrepancies])
+            files_list = [os.path.join(self._dir_path, entry) for entry in os.listdir(self._dir_path) if
+                          os.path.isfile(os.path.join(self._dir_path, entry))]
 
-    db = DBLayer(uri=config.uri, db_name=config.db_name).get_db()
+            documents_data = []
+            discrepancies_data = []
+            for file in files_list:
+                try:
+                    parser = DocumentParser()
+                    parsed_data = parser.parse(file)
+                    documents_data.append(parsed_data.dict())
 
-    documents_collection = DocumentCollection(db=db, config=config)
-    discrepancies_collection = DiscrepancyCollection(db=db, config=config)
+                    validator = DocumentValidator(min_title_length=self._config.min_title_length,
+                                                  max_creation_date=self._config.max_creation_date,
+                                                  max_row_sum=self._config.max_row_sum)
+                    validation_result = validator.validate(parsed_data)
+                    discrepancies_data.extend(validation_result.discrepancies)
 
-    # documents_collection.empty()
-    # discrepancies_collection.empty()
+                except Exception as e:
+                    self._logger.error(f'Failed processing file: {file}, {e}')
 
-    # documents_collection.insert_many(parsed_documents)
-    discrepancies_collection.insert_many(discrepancies)
+            CollectionFactory.insert_many_to_collection(collection_name=DOCUMENTS, data=documents_data, db=self._db)
+            CollectionFactory.insert_many_to_collection(collection_name=DISCREPANCIES, data=discrepancies_data, db=self._db)
+
+        except Exception as e:
+            self._logger.error(f'An unexpected error occurred: {e}')
 
 
 if __name__ == '__main__':
-    main('documents')
+    args = get_args()
+    app_config = Config.get_config(args)
+    app_db = DBLayer(db_uri=app_config.db_uri,
+                     db_name=app_config.db_name).get_db()
+
+    app = DocumentParserApp(config=app_config,
+                            db=app_db,
+                            dir_path=args.PATH)
+    app.run()

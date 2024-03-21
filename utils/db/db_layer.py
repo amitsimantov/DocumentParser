@@ -5,9 +5,9 @@ from utils.logger import Logger
 
 class DBLayer:
 
-    def __init__(self, uri, db_name):
+    def __init__(self, db_uri, db_name):
         self._logger = Logger('db-layer-logger').get_logger()
-        self._client = MongoClient(uri)
+        self._client = MongoClient(db_uri)
         self._db = self._client[db_name]
 
     def get_db(self):
